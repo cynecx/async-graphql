@@ -4,7 +4,7 @@ use std::fmt::{self, Debug, Formatter};
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::{Data, ParseRequestError, UploadValue, Value, Variables};
+use crate::{schema::IntrospectionMode, Data, ParseRequestError, UploadValue, Value, Variables};
 
 /// GraphQL request.
 ///
@@ -41,7 +41,7 @@ pub struct Request {
 
     /// Disable introspection queries for this request.
     #[serde(skip)]
-    pub disable_introspection: bool,
+    pub introspection_mode: IntrospectionMode,
 }
 
 impl Request {
@@ -54,7 +54,7 @@ impl Request {
             uploads: Vec::default(),
             data: Data::default(),
             extensions: Default::default(),
-            disable_introspection: false,
+            introspection_mode: IntrospectionMode::Enabled,
         }
     }
 
@@ -83,7 +83,14 @@ impl Request {
     /// Disable introspection queries for this request.
     #[must_use]
     pub fn disable_introspection(mut self) -> Self {
-        self.disable_introspection = true;
+        self.introspection_mode = IntrospectionMode::Disabled;
+        self
+    }
+
+    /// Only allow introspection queries for this request.
+    #[must_use]
+    pub fn only_introspection(mut self) -> Self {
+        self.introspection_mode = IntrospectionMode::IntrospectionOnly;
         self
     }
 
@@ -206,7 +213,16 @@ impl BatchRequest {
     #[must_use]
     pub fn disable_introspection(mut self) -> Self {
         for request in self.iter_mut() {
-            request.disable_introspection = true;
+            request.introspection_mode = IntrospectionMode::Disabled;
+        }
+        self
+    }
+
+    /// Only allow introspection queries for each request.
+    #[must_use]
+    pub fn introspection_only(mut self) -> Self {
+        for request in self.iter_mut() {
+            request.introspection_mode = IntrospectionMode::IntrospectionOnly;
         }
         self
     }
